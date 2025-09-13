@@ -52,8 +52,9 @@ exports.getAllVisits = async (req, res) => {
 exports.getTechnicianTodayVisits = async (req, res) => {
     const technician_id = req.user.id;
     try {
+        // Esta consulta ahora podrá obtener el email que acabamos de añadir a la tabla.
         const { rows } = await db.query(
-            `SELECT v.*, c.name as client_name, c.address, c.lat, c.lng, c.email as client_email
+            `SELECT v.*, c.name as client_name, c.address, c.lat, c.lng, c.email as client_email 
              FROM visits v 
              JOIN clients c ON v.client_id = c.id
              WHERE v.technician_id = $1 AND v.planned_at::date = CURRENT_DATE
