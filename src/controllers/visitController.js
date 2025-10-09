@@ -1,25 +1,17 @@
+// Ruta: /backend/src/controllers/visitController.js
+
 const db = require('../config/db');
 
-exports.createVisit = async (req, res) => {
-    const { client_id, technician_id, planned_at } = req.body;
-    const supervisor_id = req.user.id; // El supervisor es el usuario logueado
-    try {
-        const { rows } = await db.query(
-            'INSERT INTO visits (client_id, technician_id, supervisor_id, planned_at) VALUES ($1, $2, $3, $4) RETURNING *',
-            [client_id, technician_id, supervisor_id, planned_at]
-        );
-        res.status(201).json(rows[0]);
-    } catch (error) {
-        res.status(500).json({ message: 'Error al crear la visita', error: error.message });
-    }
-};
-
+// ENDPOINT REFACTORIZADO Y POTENCIADO
 exports.getAllVisits = async (req, res) => {
-    // Consulta base con JOINs para obtener nombres en lugar de solo IDs
+    const { role, id: userId } = req.user;
+    // Extraemos los filtros de la query string (ej: /api/visits?status=PENDING&technicianId=3)
+    const { status, technicianId, supervisorId, startDate, endDate } = req.query;
+
     let query = `
         SELECT 
             v.id, v.planned_at, v.status,
-            c.name as client_name,
+            c.name as client_name, c.address, c.lat, c.lng, c.email as client_email,
             t.name as technician_name,
             s.name as supervisor_name
         FROM visits v
@@ -27,17 +19,46 @@ exports.getAllVisits = async (req, res) => {
         JOIN users t ON v.technician_id = t.id
         JOIN users s ON v.supervisor_id = s.id
     `;
+    
+    const conditions = [];
     const params = [];
+    let paramIndex = 1;
 
-    // Filtramos según el rol del usuario que hace la petición
-    if (req.user.role === 'SUPERVISOR') {
-        query += ' WHERE v.supervisor_id = $1';
-        params.push(req.user.id);
-    } else if (req.user.role === 'TECHNICIAN') {
-        query += ' WHERE v.technician_id = $1';
-        params.push(req.user.id);
+    // --- LÓGICA DE PERMISOS ---
+    if (role === 'SUPERVISOR') {
+        conditions.push(`v.supervisor_id = $${paramIndex++}`);
+        params.push(userId);
+    } else if (role === 'TECHNICIAN') {
+        conditions.push(`v.technician_id = $${paramIndex++}`);
+        params.push(userId);
     }
-    // El ADMIN no tiene filtro, ve todo.
+    // El ADMIN no tiene restricciones de permiso iniciales
+
+    // --- LÓGICA DE FILTROS ---
+    if (status) {
+        conditions.push(`v.status = $${paramIndex++}`);
+        params.push(status);
+    }
+    if (technicianId) {
+        conditions.push(`v.technician_id = $${paramIndex++}`);
+        params.push(technicianId);
+    }
+    if (supervisorId && role === 'ADMIN') { // Solo el admin puede filtrar por supervisor
+        conditions.push(`v.supervisor_id = $${paramIndex++}`);
+        params.push(supervisorId);
+    }
+    if (startDate) {
+        conditions.push(`v.planned_at >= $${paramIndex++}`);
+        params.push(startDate);
+    }
+    if (endDate) {
+        conditions.push(`v.planned_at <= $${paramIndex++}`);
+        params.push(endDate);
+    }
+
+    if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
+    }
     
     query += ' ORDER BY v.planned_at DESC';
 
@@ -49,24 +70,41 @@ exports.getAllVisits = async (req, res) => {
     }
 };
 
-exports.getTechnicianTodayVisits = async (req, res) => {
-    const technician_id = req.user.id;
+// --- EL RESTO DE FUNCIONES SE MANTIENEN IGUAL ---
+
+exports.createVisit = async (req, res) => {
+    // Obtenemos los datos del cuerpo de la petición
+    const { client_id, technician_id, planned_at } = req.body;
+    
+    // Obtenemos los datos del usuario que hace la petición (del token)
+    const { id: creatorId, role: creatorRole } = req.user;
+
+    let supervisor_id;
+
+    // Lógica inteligente de asignación
+    if (creatorRole === 'SUPERVISOR') {
+        // Si el creador es un supervisor, se auto-asigna
+        supervisor_id = creatorId;
+    } else if (creatorRole === 'ADMIN') {
+        // Si es un admin, DEBE haber enviado un supervisor_id en la petición
+        if (!req.body.supervisor_id) {
+            return res.status(400).json({ message: 'Como Administrador, debes seleccionar un supervisor para la visita.' });
+        }
+        supervisor_id = req.body.supervisor_id;
+    } else {
+        return res.status(403).json({ message: 'No tienes permiso para crear visitas.' });
+    }
+
     try {
-        // Esta consulta ahora podrá obtener el email que acabamos de añadir a la tabla.
         const { rows } = await db.query(
-            `SELECT v.*, c.name as client_name, c.address, c.lat, c.lng, c.email as client_email 
-             FROM visits v 
-             JOIN clients c ON v.client_id = c.id
-             WHERE v.technician_id = $1 AND v.planned_at::date = CURRENT_DATE
-             ORDER BY v.planned_at ASC`,
-            [technician_id]
+            'INSERT INTO visits (client_id, technician_id, supervisor_id, planned_at) VALUES ($1, $2, $3, $4) RETURNING *',
+            [client_id, technician_id, supervisor_id, planned_at]
         );
-        res.json(rows);
+        res.status(201).json(rows[0]);
     } catch (error) {
-        res.status(500).json({ message: "Error al obtener las visitas de hoy", error: error.message });
+        res.status(500).json({ message: 'Error al crear la visita', error: error.message });
     }
 };
-
 
 exports.technicianCheckIn = async (req, res) => {
     const visit_id = req.params.id;
@@ -115,8 +153,6 @@ exports.technicianCheckOut = async (req, res) => {
             [visit_id, summary, minutes_spent]
         );
         await client.query('COMMIT');
-
-        // AQUÍ IRÍA LA LÓGICA PARA ENVIAR EL EMAIL Y GENERAR EL PDF
         
         res.json({ message: 'Check-out realizado con éxito', visit: rows[0] });
     } catch (error) {
