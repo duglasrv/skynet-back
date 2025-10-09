@@ -2,10 +2,9 @@
 
 const db = require('../config/db');
 
-// ENDPOINT REFACTORIZADO Y POTENCIADO
+// ENDPOINT REFACTORIZADO Y POTENCIADO (VERSIÓN FINAL Y CORREGIDA)
 exports.getAllVisits = async (req, res) => {
     const { role, id: userId } = req.user;
-    // Extraemos los filtros de la query string (ej: /api/visits?status=PENDING&technicianId=3)
     const { status, technicianId, supervisorId, startDate, endDate } = req.query;
 
     let query = `
@@ -32,7 +31,6 @@ exports.getAllVisits = async (req, res) => {
         conditions.push(`v.technician_id = $${paramIndex++}`);
         params.push(userId);
     }
-    // El ADMIN no tiene restricciones de permiso iniciales
 
     // --- LÓGICA DE FILTROS ---
     if (status) {
@@ -43,7 +41,7 @@ exports.getAllVisits = async (req, res) => {
         conditions.push(`v.technician_id = $${paramIndex++}`);
         params.push(technicianId);
     }
-    if (supervisorId && role === 'ADMIN') { // Solo el admin puede filtrar por supervisor
+    if (supervisorId && role === 'ADMIN') {
         conditions.push(`v.supervisor_id = $${paramIndex++}`);
         params.push(supervisorId);
     }
@@ -73,28 +71,20 @@ exports.getAllVisits = async (req, res) => {
 // --- EL RESTO DE FUNCIONES SE MANTIENEN IGUAL ---
 
 exports.createVisit = async (req, res) => {
-    // Obtenemos los datos del cuerpo de la petición
+    // ... esta función no cambia ...
     const { client_id, technician_id, planned_at } = req.body;
-    
-    // Obtenemos los datos del usuario que hace la petición (del token)
     const { id: creatorId, role: creatorRole } = req.user;
-
     let supervisor_id;
-
-    // Lógica inteligente de asignación
     if (creatorRole === 'SUPERVISOR') {
-        // Si el creador es un supervisor, se auto-asigna
         supervisor_id = creatorId;
     } else if (creatorRole === 'ADMIN') {
-        // Si es un admin, DEBE haber enviado un supervisor_id en la petición
         if (!req.body.supervisor_id) {
-            return res.status(400).json({ message: 'Como Administrador, debes seleccionar un supervisor para la visita.' });
+            return res.status(400).json({ message: 'Como Administrador, debes seleccionar un supervisor.' });
         }
         supervisor_id = req.body.supervisor_id;
     } else {
-        return res.status(403).json({ message: 'No tienes permiso para crear visitas.' });
+        return res.status(403).json({ message: 'No tienes permiso.' });
     }
-
     try {
         const { rows } = await db.query(
             'INSERT INTO visits (client_id, technician_id, supervisor_id, planned_at) VALUES ($1, $2, $3, $4) RETURNING *',
@@ -107,6 +97,7 @@ exports.createVisit = async (req, res) => {
 };
 
 exports.technicianCheckIn = async (req, res) => {
+    // ... esta función no cambia ...
     const visit_id = req.params.id;
     const { lat, lng } = req.body;
     const client = await db.getClient();
@@ -117,7 +108,6 @@ exports.technicianCheckIn = async (req, res) => {
             [visit_id, req.user.id]
         );
         if(rows.length === 0) throw new Error("Visita no encontrada o no asignada a este técnico.");
-        
         await client.query(
             "INSERT INTO visit_logs (visit_id, event_type, lat, lng) VALUES ($1, 'CHECKIN', $2, $3)",
             [visit_id, lat, lng]
@@ -133,6 +123,7 @@ exports.technicianCheckIn = async (req, res) => {
 };
 
 exports.technicianCheckOut = async (req, res) => {
+    // ... esta función no cambia ...
     const visit_id = req.params.id;
     const { lat, lng, summary, minutes_spent } = req.body;
     const client = await db.getClient();
@@ -143,7 +134,6 @@ exports.technicianCheckOut = async (req, res) => {
             [visit_id, req.user.id]
         );
         if(rows.length === 0) throw new Error("Visita no encontrada o no asignada a este técnico.");
-
         await client.query(
             "INSERT INTO visit_logs (visit_id, event_type, lat, lng) VALUES ($1, 'CHECKOUT', $2, $3)",
             [visit_id, lat, lng]
@@ -153,7 +143,6 @@ exports.technicianCheckOut = async (req, res) => {
             [visit_id, summary, minutes_spent]
         );
         await client.query('COMMIT');
-        
         res.json({ message: 'Check-out realizado con éxito', visit: rows[0] });
     } catch (error) {
         await client.query('ROLLBACK');
