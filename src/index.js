@@ -4,12 +4,7 @@
 // Es crucial que esta línea esté al principio para que todas las demás partes de la aplicación
 // tengan acceso a las variables de entorno, como las credenciales de la base de datos o los secretos de JWT.
 require('dotenv').config();
-
-// Importa Express, el framework web para Node.js que se utiliza para construir la API.
 const express = require('express');
-// Importa el middleware 'cors' (Cross-Origin Resource Sharing).
-// Este middleware es esencial para permitir que tu aplicación de frontend (que se ejecuta en un dominio/puerto diferente)
-// pueda hacer peticiones a este servidor de backend de forma segura.
 const cors = require('cors');
 
 // --- Importación de Módulos de Rutas ---
@@ -26,14 +21,27 @@ const reportRoutes = require('./routes/reportRoutes');        // Maneja las ruta
 // Se crea una instancia de la aplicación Express, que se usará para configurar el servidor.
 const app = express();
 
-// --- Middlewares Globales ---
-// Los middlewares son funciones que se ejecutan para cada solicitud que llega al servidor,
-// antes de que la solicitud sea manejada por el controlador de la ruta específica.
+const allowedOrigins = [
+    process.env.FRONTEND_URL, // La URL de tu app en Vercel
+    'http://localhost:3000'   // La URL de tu app en desarrollo
+];
 
-// Habilita CORS para todas las rutas y orígenes. Permite que el frontend se comunique con esta API.
-app.use(cors());
-// Habilita el middleware incorporado de Express para parsear (interpretar) cuerpos de solicitud en formato JSON.
-// Esto permite acceder a los datos enviados en el cuerpo de una petición POST o PUT a través de `req.body`.
+const corsOptions = {
+    origin: (origin, callback) => {
+        // Permite peticiones sin 'origin' (como las de Postman o apps móviles)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'La política de CORS para este sitio no permite acceso desde el origen especificado.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
+    optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
 app.use(express.json());
 
 // --- Definición de las Rutas de la API ---
