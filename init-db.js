@@ -30,11 +30,14 @@ const runSqlFile = async (filePath) => {
 const initializeDatabase = async () => {
     console.log('Iniciando la inicialización de la base de datos...');
     
+    // --- CAMBIO CLAVE AQUÍ ---
+    // Se añade 'src' a la ruta para que coincida con tu estructura de carpetas.
     // Ejecuta primero el schema para crear las tablas
-    await runSqlFile(path.join(__dirname, 'db', 'schema.sql'));
+    await runSqlFile(path.join(__dirname, 'src', 'db', 'schema.sql'));
     
+    // --- Y CAMBIO CLAVE AQUÍ ---
     // Luego, ejecuta el script de datos para poblarlas
-    await runSqlFile(path.join(__dirname, 'db', 'data.sql'));
+    await runSqlFile(path.join(__dirname, 'src', 'db', 'data.sql'));
     
     console.log('🎉 Inicialización de la base de datos completada.');
     
