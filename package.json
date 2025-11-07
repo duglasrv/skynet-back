@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "Backend API for SkyNet Project",
   "main": "src/index.js",
-  "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "db:init": "node init-db.js",
-    "railway:deploy": "sleep 5 && npm run db:init && npm start"
-  },
+"scripts": {
+  "start": "node src/index.js",
+  "dev": "nodemon src/index.js",
+  "build": "npm run db:init",
+  "db:init": "node init-db.js"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
