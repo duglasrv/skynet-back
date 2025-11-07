@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "db:init": "node init-db.js"
+    "db:init": "node init-db.js",
+    "railway:deploy": "sleep 5 && npm run db:init && npm start"
   },
   "keywords": [],
   "author": "",
