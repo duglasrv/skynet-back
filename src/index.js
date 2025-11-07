@@ -1,78 +1,81 @@
 // --- Configuración Inicial ---
 
-// Carga las variables de entorno desde un archivo .env en el objeto `process.env`.
-// Es crucial que esta línea esté al principio para que todas las demás partes de la aplicación
-// tengan acceso a las variables de entorno, como las credenciales de la base de datos o los secretos de JWT.
+// Carga las variables de entorno desde un archivo .env
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
 // --- Importación de Módulos de Rutas ---
-// Se importan los archivos que definen las rutas para cada recurso de la API.
-// Esta práctica mantiene el código organizado y separado por funcionalidades.
-const authRoutes = require('./routes/authRoutes');          // Maneja las rutas de autenticación (ej: /login).
-const userRoutes = require('./routes/userRoutes');          // Maneja las rutas para el CRUD (Crear, Leer, Actualizar, Borrar) de usuarios.
-const clientRoutes = require('./routes/clientRoutes');        // Maneja las rutas para el CRUD de clientes.
-const visitRoutes = require('./routes/visitRoutes');         // Maneja las rutas para el CRUD y gestión de visitas técnicas.
-const dashboardRoutes = require('./routes/dashboardRoutes');  // Maneja las rutas para obtener datos agregados para el panel de control.
-const reportRoutes = require('./routes/reportRoutes');        // Maneja las rutas para la generación de reportes.
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const clientRoutes = require('./routes/clientRoutes');
+const visitRoutes = require('./routes/visitRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 
 // --- Creación de la Aplicación Express ---
-// Se crea una instancia de la aplicación Express, que se usará para configurar el servidor.
 const app = express();
 
+
+// --- CONFIGURACIÓN DE CORS ROBUSTA Y COMPLETA ---
+
+// 1. Define la lista de orígenes (dominios) que tienen permiso para conectarse.
 const allowedOrigins = [
-    process.env.FRONTEND_URL, // La URL de tu app en Vercel
-    'http://localhost:3000'   // La URL de tu app en desarrollo
+    process.env.FRONTEND_URL, // La URL de tu app en Vercel (ej: https://skynet-front.vercel.app)
+    'http://localhost:3000'   // La URL que usas para desarrollo local
 ];
 
+// 2. Crea las opciones de configuración para el middleware 'cors'.
 const corsOptions = {
+    // La función 'origin' verifica si la petición viene de un dominio permitido.
     origin: (origin, callback) => {
-        // Permite peticiones sin 'origin' (como las de Postman o apps móviles)
-        if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = 'La política de CORS para este sitio no permite acceso desde el origen especificado.';
-            return callback(new Error(msg), false);
+        // Permitimos la petición si el origen está en nuestra lista blanca
+        // o si no hay origen (peticiones desde el mismo servidor, Postman, etc.).
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('No permitido por la política de CORS'));
         }
-        return callback(null, true);
     },
+    // 3. Define los métodos HTTP permitidos (CRUCIAL para el error de preflight).
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+
+    // 4. Define las cabeceras que el frontend puede enviar (CRUCIAL para el error de preflight).
+    allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+
+    // 5. Permite que el navegador envíe credenciales (cookies, tokens de autorización).
+    credentials: true,
+    
+    // Código de estado para respuestas exitosas a peticiones de sondeo (OPTIONS).
     optionsSuccessStatus: 200
 };
 
+// 6. Usa el middleware de CORS con la configuración completa.
 app.use(cors(corsOptions));
 
+
+// --- Middlewares Globales ---
+// Habilita el parseo de cuerpos de solicitud en formato JSON.
 app.use(express.json());
 
-// --- Definición de las Rutas de la API ---
 
-// Define una ruta GET simple en /api.
-// A menudo se usa como un "health check" para verificar que la API está en funcionamiento.
+// --- Definición de las Rutas de la API ---
 app.get('/api', (req, res) => {
     res.json({ message: 'API de SkyNet está funcionando correctamente.' });
 });
 
-// "Monta" los enrutadores importados en prefijos de URL específicos.
-// Todas las rutas definidas en el archivo 'authRoutes' estarán precedidas por '/api/auth'.
+// Monta los enrutadores importados en sus prefijos de URL.
 app.use('/api/auth', authRoutes);
-// Todas las rutas en 'userRoutes' comenzarán con '/api/users'.
 app.use('/api/users', userRoutes);
-// Y así sucesivamente para cada módulo de rutas.
 app.use('/api/clients', clientRoutes);
 app.use('/api/visits', visitRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
 
-// --- Arranque del Servidor ---
 
-// Define el puerto en el que escuchará el servidor.
-// Intenta obtener el puerto de una variable de entorno `PORT` (común en entornos de producción y despliegue).
-// Si no la encuentra, utiliza el puerto 4000 como valor predeterminado (típico para desarrollo local).
+// --- Arranque del Servidor ---
 const PORT = process.env.PORT || 4000;
 
-// Inicia el servidor para que comience a escuchar peticiones HTTP en el puerto especificado.
-// La función callback se ejecuta una vez que el servidor se ha iniciado con éxito.
 app.listen(PORT, () => {
-    // Imprime un mensaje en la consola para confirmar que el servidor está corriendo y en qué puerto.
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
 });
