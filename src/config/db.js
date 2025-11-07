@@ -1,26 +1,26 @@
-// Ruta: /skynet-back/src/config/db.js (con SSL habilitado)
-
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// Se crea un pool de conexiones para gestionar las conexiones a la DB de forma eficiente.
-const pool = new Pool({
+// --- CAMBIO CLAVE: CONFIGURACIÓN DINÁMICA DE LA BASE DE DATOS ---
+
+// 1. Empezamos con la configuración base que funciona en local.
+const dbConfig = {
     connectionString: process.env.DATABASE_URL,
-    
-    // --- CAMBIO CLAVE: HABILITAR SSL PARA CONEXIONES EN PRODUCCIÓN (RAILWAY) ---
-    // Esta configuración es crucial para que tu aplicación (una vez iniciada)
-    // pueda conectarse a la base de datos de Railway de forma segura.
-    ssl: {
-      rejectUnauthorized: false
-    }
-});
+};
+
+// 2. Si la aplicación está corriendo en producción (como en Railway),
+//    añadimos la configuración de SSL requerida.
+if (process.env.NODE_ENV === 'production') {
+    dbConfig.ssl = {
+        rejectUnauthorized: false
+    };
+}
+
+// 3. Creamos el pool con la configuración correcta para el entorno actual.
+const pool = new Pool(dbConfig);
+
 
 module.exports = {
-    // Función para ejecutar consultas, usando el pool.
-    // Recibe el texto de la consulta SQL y los parámetros para evitar inyecciones
     query: (text, params) => pool.query(text, params),
-    
-    // Función para usar transacciones
-    // Obtiene un cliente dedicado del pool para ejecutar múltiples operaciones en una transacción
     getClient: () => pool.connect(),
 };
