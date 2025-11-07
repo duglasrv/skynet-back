@@ -1,4 +1,5 @@
 -- PostgreSQL database structure dump for SkyNet
+-- Version: Idempotent (Safe for re-running)
 
 -- Basic session configuration
 SET statement_timeout = 0;
@@ -13,26 +14,25 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+-- Drop existing objects to ensure a clean slate on every run
+DROP TABLE IF EXISTS public.visit_reports CASCADE;
+DROP TABLE IF EXISTS public.visit_logs CASCADE;
+DROP TABLE IF EXISTS public.visits CASCADE;
+DROP TABLE IF EXISTS public.users CASCADE;
+DROP TABLE IF EXISTS public.clients CASCADE;
+
+DROP TYPE IF EXISTS public.user_role CASCADE;
+DROP TYPE IF EXISTS public.visit_log_event CASCADE;
+DROP TYPE IF EXISTS public.visit_status CASCADE;
+
 -- Custom TYPE definitions
-CREATE TYPE public.user_role AS ENUM (
-    'ADMIN',
-    'SUPERVISOR',
-    'TECHNICIAN'
-);
+CREATE TYPE public.user_role AS ENUM ('ADMIN', 'SUPERVISOR', 'TECHNICIAN');
 ALTER TYPE public.user_role OWNER TO postgres;
 
-CREATE TYPE public.visit_log_event AS ENUM (
-    'CHECKIN',
-    'CHECKOUT'
-);
+CREATE TYPE public.visit_log_event AS ENUM ('CHECKIN', 'CHECKOUT');
 ALTER TYPE public.visit_log_event OWNER TO postgres;
 
-CREATE TYPE public.visit_status AS ENUM (
-    'PENDING',
-    'IN_PROGRESS',
-    'FINISHED',
-    'CANCELLED'
-);
+CREATE TYPE public.visit_status AS ENUM ('PENDING', 'IN_PROGRESS', 'FINISHED', 'CANCELLED');
 ALTER TYPE public.visit_status OWNER TO postgres;
 
 SET default_tablespace = '';
