@@ -16,6 +16,7 @@ const app = express();
 app.use(cors({
   origin: [
     'https://skynet-front.vercel.app',
+    'https://www.skynet-front.vercel.app',
     'http://localhost:3000',
     'http://localhost:5173'
   ],
