@@ -9,6 +9,9 @@
   "build": "npm run db:init",
   "db:init": "node init-db.js"
 },
+  "engines": {
+    "node": "18.x"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
