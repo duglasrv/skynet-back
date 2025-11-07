@@ -1,4 +1,4 @@
-// Ruta: /skynet-back/src/index.js (Versión Final y Definitiva)
+// Ruta: /skynet-back/src/index.js (Versión con CORS Abierto para Depuración)
 
 require('dotenv').config();
 const express = require('express');
@@ -14,26 +14,16 @@ const reportRoutes = require('./routes/reportRoutes');
 const app = express();
 
 
-// --- CONFIGURACIÓN DE CORS CON FUNCIÓN DE ORIGEN (LA FORMA MÁS ROBUSTA) ---
+// --- CONFIGURACIÓN DE CORS TOTALMENTE PERMISIVA ---
 
-// 1. Define tu lista de orígenes permitidos en una constante.
-const allowedOrigins = [
-  'https://skynet-front.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:5173'
-];
-
-// 2. Usa el middleware de CORS con una configuración que incluye una función para 'origin'.
+// Esta configuración aceptará peticiones desde CUALQUIER origen,
+// incluso cuando se envían con credenciales.
 app.use(cors({
+  // La función 'origin' se configura para aceptar siempre la petición,
+  // devolviendo 'true' en el callback. Esto hace que el middleware refleje
+  // el origen del solicitante en la cabecera Access-Control-Allow-Origin.
   origin: (origin, callback) => {
-    // Permite peticiones si el origen está en la lista blanca
-    // o si la petición no tiene origen (como desde Postman o una app móvil).
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      // Si el origen no está permitido, rechaza la petición.
-      callback(new Error('No permitido por la política de CORS'));
-    }
+    callback(null, true);
   },
   credentials: true,
   methods: 'GET, POST, PUT, DELETE, OPTIONS',
