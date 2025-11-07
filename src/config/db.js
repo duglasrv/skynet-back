@@ -1,14 +1,18 @@
+// Ruta: /skynet-back/src/config/db.js (con SSL habilitado)
+
 const { Pool } = require('pg');
 require('dotenv').config();
 
 // Se crea un pool de conexiones para gestionar las conexiones a la DB de forma eficiente.
-// El pool permite reutilizar conexiones existentes en lugar de crear nuevas cada vez
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    // Para despliegue en servicios como Railway/Heroku, a veces se necesita SSL.
-    // ssl: {
-    //   rejectUnauthorized: false
-    // }
+    
+    // --- CAMBIO CLAVE: HABILITAR SSL PARA CONEXIONES EN PRODUCCIÓN (RAILWAY) ---
+    // Esta configuración es crucial para que tu aplicación (una vez iniciada)
+    // pueda conectarse a la base de datos de Railway de forma segura.
+    ssl: {
+      rejectUnauthorized: false
+    }
 });
 
 module.exports = {
