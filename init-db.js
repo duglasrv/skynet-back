@@ -1,14 +1,19 @@
+// Ruta: /skynet-back/init-db.js (Versión Final y Robusta)
+
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// --- CAMBIO CLAVE: CONFIGURACIÓN DINÁMICA DE LA BASE DE DATOS ---
+// --- CONFIGURACIÓN DE BASE DE DATOS DINÁMICA Y ROBUSTA ---
 
 const dbConfig = {
     connectionString: process.env.DATABASE_URL,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
 };
 
+// Si estamos en producción, añadimos la configuración de SSL.
 if (process.env.NODE_ENV === 'production') {
     dbConfig.ssl = {
         rejectUnauthorized: false
@@ -17,11 +22,10 @@ if (process.env.NODE_ENV === 'production') {
 
 const pool = new Pool(dbConfig);
 
-
 const runSqlFile = async (filePath) => {
     try {
         const sql = fs.readFileSync(filePath, 'utf8');
-        console.log(`Ejecuting script: ${path.basename(filePath)}...`);
+        console.log(`Executing script: ${path.basename(filePath)}...`);
         await pool.query(sql);
         console.log(`✅ Script ${path.basename(filePath)} executed successfully.`);
     } catch (error) {

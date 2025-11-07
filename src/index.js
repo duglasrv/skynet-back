@@ -1,33 +1,61 @@
-// Ruta: /skynet-back/src/index.js (Versión de Prueba de Estabilidad)
+// Ruta: /skynet-back/src/index.js (Versión Final Completa)
 
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
-// Crea la aplicación
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const clientRoutes = require('./routes/clientRoutes');
+const visitRoutes = require('./routes/visitRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+
 const app = express();
 
-// --- USA LA CONFIGURACIÓN DE CORS MÁS SIMPLE POSIBLE ---
-app.use(cors());
 
-// --- MIDDLEWARES BÁSICOS ---
+// --- CONFIGURACIÓN DE CORS TOTALMENTE PERMISIVA ---
+// Acepta peticiones desde CUALQUIER origen, incluso con credenciales.
+app.use(cors({
+  origin: (origin, callback) => {
+    callback(null, true);
+  },
+  credentials: true,
+  methods: 'GET, POST, PUT, DELETE, OPTIONS',
+  allowedHeaders: 'Content-Type, Authorization'
+}));
+
+
+// --- MIDDLEWARES GLOBALES ---
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// --- LA ÚNICA RUTA QUE EXISTE ---
-// Una ruta de salud que no hace nada más que responder.
+// --- RUTAS DE LA API ---
 app.get('/api/health', (req, res) => {
-  console.log('Health check received!'); // Añadimos un log para ver si llega la petición
-  res.status(200).json({ status: 'OK', message: 'API is ALIVE and STABLE!' });
+  res.status(200).json({ status: 'OK', message: 'SkyNet API is running' });
 });
 
-// --- MANEJADOR DE 404 ---
-// Cualquier otra ruta dará 404.
+app.get('/api', (req, res) => {
+  res.json({ message: 'API de SkyNet está funcionando correctamente.' });
+});
+
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/clients', clientRoutes);
+app.use('/api/visits', visitRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/reports', reportRoutes);
+
+// --- MANEJO DE RUTA 404 ---
 app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({
+    error: 'Route not found',
+    path: req.originalUrl
+  });
 });
 
 // --- ARRANQUE DEL SERVIDOR ---
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor de PRUEBA corriendo en puerto ${PORT}`);
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
