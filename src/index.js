@@ -1,3 +1,5 @@
+// Ruta: /skynet-back/src/index.js (Versión Final Definitiva)
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -11,23 +13,12 @@ const reportRoutes = require('./routes/reportRoutes');
 
 const app = express();
 
-const allowedOrigins = [
-  'https://skynet-front.vercel.app',
-  'https://www.skynet-front.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:5173'
-];
-
 app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: 'GET, POST, PUT, DELETE, OPTIONS',
-  allowedHeaders: 'Content-Type, Authorization'
-}));
-
-// 👇 importante: maneja las solicitudes OPTIONS explícitamente
-app.options('*', cors({
-  origin: allowedOrigins,
+  origin: [
+    'https://skynet-front.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
   credentials: true,
   methods: 'GET, POST, PUT, DELETE, OPTIONS',
   allowedHeaders: 'Content-Type, Authorization'
