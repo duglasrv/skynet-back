@@ -9,7 +9,7 @@ const userRoutes = require('./routes/userRoutes');
 const clientRoutes = require('./routes/clientRoutes');
 const visitRoutes = require('./routes/visitRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
-//const reportRoutes = require('./routes/reportRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 
 const app = express();
 
@@ -44,7 +44,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/visits', visitRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-//app.use('/api/reports', reportRoutes);
+app.use('/api/reports', reportRoutes);
 
 // --- MANEJO DE RUTA 404 ---
 app.use((req, res) => {
@@ -55,7 +55,6 @@ app.use((req, res) => {
 });
 
 // --- ARRANQUE DEL SERVIDOR ---
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-});
+app.listen(Number(process.env.PORT) || 3000, "0.0.0.0", () => {
+  console.log("Flashcardly server is now running!")
+})
